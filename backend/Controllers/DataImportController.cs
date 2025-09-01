@@ -37,9 +37,9 @@ public class DataImportController : ControllerBase
 
         stopwatch.Stop();
         // Stop
-        
 
-        return Ok($"EF Core ile {count} adet ürün {stopwatch.ElapsedMilliseconds} ms'de eklendi.");
+
+        return Ok($"{count} products were added using EF Core in {stopwatch.ElapsedMilliseconds} ms.");
     }
 
     [HttpPost("dapper-bulk-insert")]
@@ -91,6 +91,65 @@ public class DataImportController : ControllerBase
 
         stopwatch.Stop();
 
-        return Ok($"Dapper (SqlBulkCopy) ile {count} adet ürün {stopwatch.ElapsedMilliseconds} ms'de eklendi.");
+        return Ok($"{count} products were added using Dapper (SqlBulkCopy) in {stopwatch.ElapsedMilliseconds} ms.");
+    }
+
+    // orderCount => how many orders will be created
+    // maxItemsPerOrder => The maximum number of items per order
+    [HttpPost("generate-orders")]
+    public async Task<IActionResult> GenerateOrders(int orderCount = 5000, int maxItemsPerOrder = 5)
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        // 1- Get All Product IDs
+        var productIds = await _context.Products.Select(p => p.Id).ToListAsync(); // All product IDs
+        if (productIds.Count == 0)
+        {
+            return BadRequest("Please create product data first. Orders must be linked to products.");
+        }
+
+        var rand = new Random();
+        var newOrders = new List<Order>();
+        var newOrderItems = new List<OrderItem>();
+
+        // 2- create fake orders
+        var orderFaker = new Faker<Order>()
+            .RuleFor(o => o.Id, f => Guid.NewGuid())
+            .RuleFor(o => o.OrderDate, f => f.Date.Past(2)); // over the past 2 years
+
+        var orders = orderFaker.Generate(orderCount);
+
+        // 3- Generate random orders
+        foreach (var order in orders)
+        {
+            newOrders.Add(order);
+            var itemCount = rand.Next(1, maxItemsPerOrder + 1); // Random number of products per order
+
+            for (int i = 0; i < itemCount; i++)
+            {
+                var randomProduct = await _context.Products.FindAsync(productIds[rand.Next(0, productIds.Count)]); // random select product
+
+                if (randomProduct == null) continue;
+
+                var orderItemFaker = new Faker<OrderItem>()
+                    .RuleFor(oi => oi.Id, f => Guid.NewGuid())
+                    .RuleFor(oi => oi.OrderId, f => order.Id)
+                    .RuleFor(oi => oi.ProductId, f => randomProduct.Id)
+                    .RuleFor(oi => oi.Quantity, f => f.Random.Int(1, 10))
+                    .RuleFor(oi => oi.Price, f => randomProduct.Price);
+
+                newOrderItems.Add(orderItemFaker.Generate());
+            }
+        }
+
+        // 4 - Add to database
+        await _context.Orders.AddRangeAsync(newOrders);
+        await _context.OrderItems.AddRangeAsync(newOrderItems);
+        await _context.SaveChangesAsync();
+
+        stopwatch.Stop();
+
+        return Ok($"{newOrders.Count} orders and {newOrderItems.Count} order items were added via EF Core in {stopwatch.ElapsedMilliseconds} ms.");
+
     }
 }
