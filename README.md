@@ -7,6 +7,41 @@ This project is a REST API designed to compare the performance of two of the mos
 
 The main goal of this project is to provide developers with concrete data that highlights the trade-off between *ease of use* and *raw performance*.
 
+## 📊 Benchmark Summary
+
+| Scenario          | EF Core Time | Dapper Time |
+|-------------------|--------------|-------------|
+| Data Insertion    | 6736 ms      | 395 ms      |
+| Generate Orders   | 60607 ms     | -           |
+| Report Top Sellers| 255 ms       | 224 ms      |
+
+---
+
+## 📸 Visual Results
+
+### Data Insertion
+**Entity Framework Core (6736 ms)**  
+![EF Core Insert](https://github.com/user-attachments/assets/85b32c24-2423-4142-bb3e-975588be4b37)  
+
+**Dapper (395 ms)**  
+![Dapper Insert](https://github.com/user-attachments/assets/efdb4226-2e8a-4731-bf1d-7074769b8c79)  
+
+---
+
+### Generate Orders
+**Entity Framework Core (60607 ms)**  
+![EF Core Orders](https://github.com/user-attachments/assets/8fffdbe5-9474-4966-9933-4771993f06b5)  
+
+---
+
+### Report Top Sellers
+**Entity Framework Core (255 ms)**  
+![EF Core Report](https://github.com/user-attachments/assets/91952a5e-19f0-42d5-8a5b-ca18a7a49364)  
+
+**Dapper (224 ms)**  
+![Dapper Report](https://github.com/user-attachments/assets/12c6aaa7-9530-4254-9f40-5eaf268f6128)  
+
+
 ## 📈 Compared Scenarios
 
 This benchmark project focuses on two critical scenarios where ORM performance differences are most noticeable:
